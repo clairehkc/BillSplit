@@ -1,7 +1,7 @@
 let details = {};
 let subtotal = total = 0;
 
-function loadExample() {
+function loadGroupSample() {
 	const input = document.getElementById("billInput").value = `
 Claire (You)
 1
@@ -53,6 +53,35 @@ Discount		-$1.98
 Delivery Fee 	$3.99
 Delivery Discount		-$3.99
 Delivery person tip	$10.37
+`
+}
+
+
+function loadRegularSample() {
+	const input = document.getElementById("billInput").value = `
+1
+Bruschetta
+$7.00
+1
+Garlic Bread
+$5.00
+1
+Fettuccini Alfredo
+$14.00
+1
+Nonni’s Italian Pot Roast
+$20.00
+1
+Fried Calamari
+$15.00
+ 
+Subtotal	$61.00
+Tax	$5.34
+Service Fee 	$9.15
+Discount		-$3.05
+Delivery Fee 	$5.99
+Delivery Discount		-$5.99
+Tip	$16.29
 `
 }
 

@@ -13,9 +13,11 @@
 					<p>Currently supports Group Orders from Uber Eats.</p>
 				</div>
 				<textarea id="billInput" rows="15" cols="50"></textarea>
-				<br>
-				<button onclick="splitBill()">Split Bill</button>
-				<button onclick="loadExample()">Example Bill</button>
+				<div id=buttonContainer>
+					<button onclick="splitBill()">Split Bill</button>
+					<button onclick="loadGroupSample()">Sample Group Bill</button>
+					<button onclick="loadRegularSample()">Sample Bill</button>
+				</div>
 			</div>
 			<div id="splitResultsContainer">
 				<div id="splitResultsTitle">Split:</div>
