@@ -73,18 +73,17 @@ function priceToFloat(price) {
 }
 
 function distributeFees(value, isPercentage = false) {
-	let totalAdded = 0;
 	const numUsers = Object.keys(details).length;
 	
 	Object.values(details).forEach(userDetail => {
 		const amountToAdd = isPercentage ? userDetail.total * value / subtotal : value / numUsers;
 		;
-		console.log("amountToAdd", value, amountToAdd, userDetail.total);
-		totalAdded += amountToAdd;
 		userDetail.fees += amountToAdd;
-		console.log("updated fees", userDetail.fees);
 	});
-	console.log("totalAdded", totalAdded);
+}
+
+function getEOLPrice(line) {
+	return line.split(/(\s+)/).pop();
 }
 
 function formattedResults() {
@@ -166,24 +165,22 @@ function splitBill() {
 			}
 
 			const itemName = lines[itemLineIndex+1];
-			console.log("itemName", itemName);
 			let itemPrice = lines[itemLineIndex+2];
 			if (!(itemPrice.startsWith("$"))) {
 				displayErrorMessage();
 				return;
 			}
 			itemPrice = priceToFloat(itemPrice);
-			console.log("itemPrice", itemPrice);
 			details[currentUser].items.push(itemName);
 			details[currentUser].total = details[currentUser].total + itemPrice;
+			continue;
 		}
 
 		const cleanedLine = lines[i].trim().toUpperCase().replace(/(\s+)/g, "");
 
 		if (cleanedLine.startsWith("SUBTOTAL")) {
-			subtotal = priceToFloat(lines[i].split(/(\s+)/).pop());
+			subtotal = priceToFloat(getEOLPrice(lines[i]));
 			const calculatedSubtotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
-			Object.values(details).forEach(userDetail => console.log("user subtotal", userDetail.total));
 			if (subtotal != calculatedSubtotal) {
 				displayErrorMessage();
 				return;
@@ -191,42 +188,28 @@ function splitBill() {
 		}
 
 		if (cleanedLine.startsWith("TAX")) {
-			tax = priceToFloat(lines[i].split(/(\s+)/).pop());
+			tax = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(tax, true);
-		}
-
-		if (cleanedLine.startsWith("PROMOTION")) {
-			promotion = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("PROMOTION")) {
+			promotion = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(promotion);
-		}
-
-		if (cleanedLine.startsWith("SERVICEFEE")) {
-			serviceFee = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("SERVICEFEE")) {
+			serviceFee = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(serviceFee, true)
-		}
-
-		if (cleanedLine.startsWith("DISCOUNT")) {
-			discount = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("DISCOUNT")) {
+			discount = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(discount);
-		}
-
-		if (cleanedLine.startsWith("DELIVERYFEE")) {
-			deliveryFee = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("DELIVERYFEE")) {
+			deliveryFee = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(deliveryFee);
-		}
-
-		if (cleanedLine.startsWith("DELIVERYDISCOUNT")) {
-			deliveryDiscount = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("DELIVERYDISCOUNT")) {
+			deliveryDiscount = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(deliveryDiscount);
-		}
-
-		if (cleanedLine.startsWith("DELIVERYPERSONTIP")) {
-			tip = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("DELIVERYPERSONTIP")) {
+			tip = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(tip, true)
-		}
-
-		if (cleanedLine.startsWith("TOTAL")) {
-			total = priceToFloat(lines[i].split(/(\s+)/).pop());
+		} else if (cleanedLine.startsWith("TOTAL")) {
+			total = priceToFloat(getEOLPrice(lines[i]));
 		}
 	};
 
@@ -236,9 +219,8 @@ function splitBill() {
 		userDetail.total += userDetail.fees;
 	});
 
-	console.log(details);
-
 	if (total == 0) {
+		// input was missing total
 		total = subtotal + tax + promotion + serviceFee + discount + deliveryFee + deliveryDiscount + tip; 
 	}
 
