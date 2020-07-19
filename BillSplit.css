@@ -1,0 +1,12 @@
+textarea {
+	margin-bottom: 10px;
+  resize: none;
+}
+
+#billInputContainer {
+	margin-bottom: 15px;
+}
+
+#billInputTitle, #splitResultsTitle {
+	margin-bottom: 10px;
+}
