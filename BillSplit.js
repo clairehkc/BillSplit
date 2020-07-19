@@ -2,9 +2,7 @@ let details = {};
 let subtotal = total = 0;
 
 function loadExample() {
-	const input = document.getElementById("billInput").value = `Total	$50.32
-You earned 39 points on this order
-
+	const input = document.getElementById("billInput").value = `
 Claire (You)
 1
 Popcorn Chicken
@@ -12,22 +10,22 @@ $7.95
 1
 Boba Milk Tea
 $4.75
-Choice of Ice
-25% (Little Ice) ($0.00)
-Choice of Preparation
-Black Tea ($0.00)
-Choice of Sweetness
-25% (Little Sweet) ($0.00)
+ 	Choice of Ice
+ 	25% (Little Ice) ($0.00)
+ 	Choice of Preparation
+ 	Black Tea ($0.00)
+ 	Choice of Sweetness
+ 	25% (Little Sweet) ($0.00)
 Jill
 1
 Taro Milk Tea
 $5.25
-Choice of Ice
-25% (Little Ice) ($0.00)
-Choice of Toppings
-Boba ($0.50)
-Choice of Sweetness
-25% (Little Sweet) ($0.00)
+ 	Choice of Ice
+ 	25% (Little Ice) ($0.00)
+ 	Choice of Toppings
+ 	Boba ($0.50)
+ 	Choice of Sweetness
+ 	25% (Little Sweet) ($0.00)
 1
 Popcorn Chicken
 $7.95
@@ -35,18 +33,18 @@ Frederick
 1
 Mango Passion Fruit Tea
 $5.75
-Choice of Sweetness
-50% (Half Sweet) ($0.00)
-Choice of Ice
-25% (Little Ice) ($0.00)
-Choice of Toppings
-Lychee Jelly ($0.50)
+ 	Choice of Sweetness
+ 	50% (Half Sweet) ($0.00)
+ 	Choice of Ice
+ 	25% (Little Ice) ($0.00)
+ 	Choice of Toppings
+ 	Lychee Jelly ($0.50)
 Vince Vince
 1
 Popcorn Chicken
 $7.95
 .
-
+ 
 Subtotal	$39.60
 Tax	$2.33
 Promotion	-$5.94
@@ -66,6 +64,7 @@ function reset() {
 function priceToFloat(price) {
 	const priceInFloat = parseFloat(price.replace("$", ""));
 	if (isNaN(priceInFloat)) {
+		console.error("invalid input");
 		displayErrorMessage();
 		return;	
 	}
@@ -113,7 +112,7 @@ function formattedResults() {
 
 		const userTotalContainer = document.createElement("div");
 		userTotalContainer.className = "userTotalContainer";
-		const userTotal = document.createTextNode(details[user].total.toFixed(2));
+		const userTotal = document.createTextNode("$" + details[user].total.toFixed(2));
 		userTotalContainer.appendChild(userTotal);
 		userResultContainer.appendChild(userTotalContainer);
 
@@ -124,7 +123,7 @@ function formattedResults() {
 }
 
 function displayErrorMessage() {
-	const errorMessage = document.createElement("div");
+	errorMessage = document.createElement("div");
 	errorMessage.className = "errorMessage";
 	errorMessage.appendChild(document.createTextNode("Input is invalid."));
 	const splitResults = document.getElementById("splitResults");
@@ -146,6 +145,7 @@ function splitBill() {
 		if (matchedInt && matchedInt.length === 1) {
 			// found new order item
 			if (i == 0 || i == lines.length - 1) {
+				console.error("invalid input");
 				displayErrorMessage();
 				return;
 			}
@@ -159,6 +159,7 @@ function splitBill() {
 				details[currentUser] = {items: [], total: 0, fees: 0};
 			} else {
 				if (!(currentUser)) {
+					console.error("invalid input");
 					displayErrorMessage();
 					return;
 				}
@@ -167,6 +168,7 @@ function splitBill() {
 			const itemName = lines[itemLineIndex+1];
 			let itemPrice = lines[itemLineIndex+2];
 			if (!(itemPrice.startsWith("$"))) {
+				console.error("invalid input");
 				displayErrorMessage();
 				return;
 			}
@@ -177,11 +179,11 @@ function splitBill() {
 		}
 
 		const cleanedLine = lines[i].trim().toUpperCase().replace(/(\s+)/g, "");
-
 		if (cleanedLine.startsWith("SUBTOTAL")) {
 			subtotal = priceToFloat(getEOLPrice(lines[i]));
 			const calculatedSubtotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
 			if (subtotal != calculatedSubtotal) {
+				console.error("invalid input");
 				displayErrorMessage();
 				return;
 			}
@@ -213,7 +215,6 @@ function splitBill() {
 		}
 	};
 
-
 	// update totals post fees
 	Object.values(details).forEach(userDetail => {
 		userDetail.total += userDetail.fees;
@@ -227,6 +228,7 @@ function splitBill() {
 	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
 
 	if (Math.abs(total - calculatedTotal) > 0.5) {
+		console.error("invalid input");
 		displayErrorMessage();
 		return;
 	}
