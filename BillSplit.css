@@ -53,6 +53,10 @@ button {
 	margin-bottom: 32px;
 }
 
+#splitResultsContainer {
+	visibility: hidden;
+}
+
 #billInputTitle, #splitResultsTitle, #billInputDescription {
 	margin-bottom: 10px;
 }
@@ -75,7 +79,7 @@ button {
 
 .userResultContainer {
 	padding-left: 10px;
-	margin-bottom: 32px;
+	margin-bottom: 24px;
 }
 
 .userItemsContainer, .userTotalContainer {
@@ -84,4 +88,43 @@ button {
 
 .userTotalContainer {
 	color: #00cc99;
+}
+
+.usernameContainer {
+	padding-bottom: 5px;
+}
+
+.itemContainer, .userTotalContainer {
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
+.itemContainer {
+	display: flex;
+	flex-flow: row;
+	justify-content: space-between;
+	max-width: 480px;
+}
+
+.nameInput {
+	margin-left: 5px;
+	border: none;
+	outline: none;
+}
+
+.assignmentMode {
+	border-bottom: 1px solid #f0f0f5;
+}
+
+#doneButtonContainer {
+	display: flex;
+	flex-flow: row;
+	justify-content: flex-end;
+	max-width: 495px;
+}
+
+#doneButton {
+	margin-top: 10px;
+	min-width: 25px;
+	padding: 10px 24px;
 }
