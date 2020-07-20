@@ -1,4 +1,3 @@
-let details = {};
 let subtotal = total = 0;
 
 function loadGroupSample() {
@@ -56,7 +55,6 @@ Delivery person tip	$10.37
 `
 }
 
-
 function loadRegularSample() {
 	const input = document.getElementById("billInput").value = `
 1
@@ -86,7 +84,6 @@ Tip	$16.29
 }
 
 function reset() {
-	details = {};
 	subtotal = total = 0;
 }
 
@@ -100,7 +97,7 @@ function priceToFloat(price) {
 	return priceInFloat;
 }
 
-function distributeFees(value, isPercentage = false) {
+function distributeFees(details, value, isPercentage = false) {
 	const numUsers = Object.keys(details).length;
 	
 	Object.values(details).forEach(userDetail => {
@@ -114,7 +111,7 @@ function getEOLPrice(line) {
 	return line.split(/(\s+)/).pop();
 }
 
-function createUserItemsContainer(user, showInputs = false) {
+function createUserItemsContainer(details, user, shouldShowInputs = false) {
 	const userItemsContainer = document.createElement("div");
 	userItemsContainer.className = "userItemsContainer";
 	Object.keys(details[user].items).forEach(item => {
@@ -125,16 +122,17 @@ function createUserItemsContainer(user, showInputs = false) {
 		const userItem = document.createTextNode(item + quantityLabel);
 		itemContainer.appendChild(userItem);
 		userItemsContainer.appendChild(itemContainer);
-		if (showInputs) {
+		if (shouldShowInputs) {
 			const nameInput = document.createElement("input");
 			nameInput.className = "nameInput";
 			itemContainer.appendChild(nameInput);
+			nameInput.setAttribute("data-itemname", item);
 		}
 	});
 	return userItemsContainer;
 }
 
-function createFormattedResults() {
+function createFormattedResults(details) {
 	const allUserResultsContainer = document.createElement("div");
 	allUserResultsContainer.id = "allUserResultsContainer";
 
@@ -148,7 +146,7 @@ function createFormattedResults() {
 		userNameContainer.appendChild(userName);
 		userResultContainer.appendChild(userNameContainer);
 
-		userResultContainer.appendChild(createUserItemsContainer(user));
+		userResultContainer.appendChild(createUserItemsContainer(details, user));
 
 		const userTotalContainer = document.createElement("div");
 		userTotalContainer.className = "userTotalContainer";
@@ -162,34 +160,66 @@ function createFormattedResults() {
 	return allUserResultsContainer;
 }
 
-function listItemsForAssignment() {
+function listItemsForAssignment(details) {
 	const allUserResultsContainer = document.createElement("div");
 	allUserResultsContainer.id = "allUserResultsContainer";
 
-	Object.keys(details).forEach(user => {
-		const userResultContainer = document.createElement("div");
-		userResultContainer.className = "userResultContainer";
+	const userResultContainer = document.createElement("div");
+	userResultContainer.className = "userResultContainer";
 
-		const assignText = document.createTextNode("Assign items to people:");
-		userResultContainer.appendChild(assignText);
+	const assignText = document.createTextNode("Assign items to people:");
+	userResultContainer.appendChild(assignText);
 
-		userResultContainer.appendChild(createUserItemsContainer(user, true));
+	userResultContainer.appendChild(createUserItemsContainer(details, "TBD", true));
 
-		const doneButtonContainer = document.createElement("div");
-		doneButtonContainer.id = "doneButtonContainer";
-		const doneButton = document.createElement("button");
-		doneButton.innerHTML = "Done";
-		doneButton.id = "doneButton";
-		doneButton.onclick = function() {
-			splitBill("names");
-		}
-		doneButtonContainer.appendChild(doneButton);
-		userResultContainer.appendChild(doneButtonContainer);
+	const doneButtonContainer = document.createElement("div");
+	doneButtonContainer.id = "doneButtonContainer";
+	const doneButton = document.createElement("button");
+	doneButton.innerHTML = "Done";
+	doneButton.id = "doneButton";
+	doneButton.onclick = function() {
+		doneAssignment(details);
+	}
+	doneButtonContainer.appendChild(doneButton);
+	userResultContainer.appendChild(doneButtonContainer);
 
-		allUserResultsContainer.appendChild(userResultContainer);
-	});
+	allUserResultsContainer.appendChild(userResultContainer);
 
 	return allUserResultsContainer;
+}
+
+function doneAssignment(details) {
+	const manualInputDetails = {};
+	const nameInputs = document.getElementsByClassName("nameInput");
+	const foundEmptyInput = Object.values(nameInputs).find(input => input.value == "");
+
+	if (foundEmptyInput) {
+		alert("All items must be assigned");
+		return;
+	}
+
+	Object.values(nameInputs).forEach(input => {
+		const name = input.value.toUpperCase();
+		const itemName = input.dataset.itemname;
+		const itemPrice = details["TBD"].items[itemName].price;
+		if (!manualInputDetails.hasOwnProperty(name)) {
+			// new user
+			manualInputDetails[name] = {items: {}, total: itemPrice, fees: 0};
+			manualInputDetails[name].items[itemName] = {price: itemPrice, quantity: 1};
+		} else {
+			// existing user
+			if (!manualInputDetails[name].items.hasOwnProperty(itemName)) {
+				// new item
+				manualInputDetails[name].items[itemName] = {price: itemPrice, quantity: 1};
+			} else {
+				// existing item
+				manualInputDetails[name].items[itemName] = manualInputDetails[name].items[itemName].quantity += 1;
+			}
+			manualInputDetails[name].total += itemPrice * manualInputDetails[name].items[itemName].quantity;
+		}
+	});
+
+	splitBill(manualInputDetails);
 }
 
 function displayErrorMessage() {
@@ -201,68 +231,74 @@ function displayErrorMessage() {
 	splitResults.appendChild(errorMessage);
 }
 
-function splitBill(assignedNames = null) {
-	if (!assignedNames) reset();
-	console.log("assignedNames", assignedNames);
+function splitBill(manualInputDetails = null) {
+	reset();
+	const details = {};
 	const input = document.getElementById("billInput").value.trim();
 	let tax = promotion = serviceFee = discount = deliveryFee = deliveryDiscount = tip = 0;
 	const lines = input.split('\n');
 	let currentUser;
+	let finalDetails;
 
 	for (let i = 0; i < lines.length; i++) {
-		const isInt = /^[1-9]\d*$\b/g;
-		const matchedInt = lines[i].match(isInt);
-		
-		// found new order item
-		if (matchedInt && matchedInt.length === 1) {			
-			if (i == lines.length - 1) {
-				console.error("invalid input");
-				displayErrorMessage();
-				return;
-			}
+		if (!manualInputDetails) {
+			const isInt = /^[1-9]\d*$\b/g;
+			const matchedInt = lines[i].match(isInt);
+			
+			// found new order item
+			if (matchedInt && matchedInt.length === 1) {			
+				if (i == lines.length - 1) {
+					console.error("invalid input");
+					displayErrorMessage();
+					return;
+				}
 
-			const itemLineIndex = i;
-			const itemQuantity = parseInt(matchedInt[0]);
+				const itemLineIndex = i;
+				const itemQuantity = parseInt(matchedInt[0]);
 
-			if (i == 0) {
-				// no user, ask to assign users
-				currentUser = "TBD";
-				details[currentUser] = {items: {}, total: 0, fees: 0};
-			} else {
-				const potentialUser = lines[itemLineIndex-1];
-				if (!(potentialUser.startsWith("$") || /^\s/.test(potentialUser))) {
-					// found new user
-					const user = potentialUser.trim();
-					currentUser = user;
-					details[currentUser] = {items: [], total: 0, fees: 0};
+				if (i == 0) {
+					// no user, ask to assign users
+					currentUser = "TBD";
+					details[currentUser] = {items: {}, total: 0, fees: 0};
 				} else {
-					if (!currentUser) {
-						console.error("invalid input");
-						displayErrorMessage();
-						return;
+					const potentialUser = lines[itemLineIndex-1];
+					if (!(potentialUser.startsWith("$") || /^\s/.test(potentialUser))) {
+						// found new user
+						const user = potentialUser.trim();
+						currentUser = user;
+						details[currentUser] = {items: [], total: 0, fees: 0};
+					} else {
+						if (!currentUser) {
+							console.error("invalid input");
+							displayErrorMessage();
+							return;
+						}
 					}
 				}
-			}
 
-			const itemName = lines[itemLineIndex+1];
-			let itemPrice = lines[itemLineIndex+2];
-			if (!(itemPrice.startsWith("$"))) {
-				console.error("invalid input");
-				displayErrorMessage();
-				return;
+				const itemName = lines[itemLineIndex+1];
+				let itemPrice = lines[itemLineIndex+2];
+				if (!(itemPrice.startsWith("$"))) {
+					console.error("invalid input");
+					displayErrorMessage();
+					return;
+				}
+				itemPrice = priceToFloat(itemPrice);
+				details[currentUser].items[itemName] = {};
+				details[currentUser].items[itemName].price = itemPrice;
+				details[currentUser].items[itemName].quantity = itemQuantity;
+				details[currentUser].total = details[currentUser].total + itemPrice * itemQuantity;
+				continue;
 			}
-			itemPrice = priceToFloat(itemPrice);
-			details[currentUser].items[itemName] = {};
-			details[currentUser].items[itemName].price = itemPrice;
-			details[currentUser].items[itemName].quantity = itemQuantity;
-			details[currentUser].total = details[currentUser].total + itemPrice * itemQuantity;
-			continue;
 		}
 
+		finalDetails = manualInputDetails || details;
 		const cleanedLine = lines[i].trim().toUpperCase().replace(/(\s+)/g, "");
 		if (cleanedLine.startsWith("SUBTOTAL")) {
 			subtotal = priceToFloat(getEOLPrice(lines[i]));
-			const calculatedSubtotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
+			const calculatedSubtotal = Object.values(finalDetails).reduce((total, userDetail) => userDetail.total + total, 0);
+			console.log("finalDetails", finalDetails);
+			console.log("subtotal", subtotal, calculatedSubtotal);
 			if (subtotal != calculatedSubtotal) {
 				console.error("invalid input");
 				displayErrorMessage();
@@ -272,32 +308,32 @@ function splitBill(assignedNames = null) {
 
 		if (cleanedLine.startsWith("TAX")) {
 			tax = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(tax, true);
+			distributeFees(finalDetails, tax, true);
 		} else if (cleanedLine.startsWith("PROMOTION")) {
 			promotion = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(promotion);
+			distributeFees(finalDetails, promotion);
 		} else if (cleanedLine.startsWith("SERVICEFEE")) {
 			serviceFee = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(serviceFee, true)
+			distributeFees(finalDetails, serviceFee, true)
 		} else if (cleanedLine.startsWith("DISCOUNT")) {
 			discount = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(discount);
+			distributeFees(finalDetails, discount);
 		} else if (cleanedLine.startsWith("DELIVERYFEE")) {
 			deliveryFee = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(deliveryFee);
+			distributeFees(finalDetails, deliveryFee);
 		} else if (cleanedLine.startsWith("DELIVERYDISCOUNT")) {
 			deliveryDiscount = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(deliveryDiscount);
+			distributeFees(finalDetails, deliveryDiscount);
 		} else if (cleanedLine.startsWith("DELIVERYPERSONTIP") || cleanedLine.startsWith("TIP")) {
 			tip = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(tip, true)
+			distributeFees(finalDetails, tip, true)
 		} else if (cleanedLine.startsWith("TOTAL")) {
 			total = priceToFloat(getEOLPrice(lines[i]));
 		}
 	};
 
 	// update totals post fees
-	Object.values(details).forEach(userDetail => {
+	Object.values(finalDetails).forEach(userDetail => {
 		userDetail.total += userDetail.fees;
 	});
 
@@ -306,8 +342,9 @@ function splitBill(assignedNames = null) {
 		total = subtotal + tax + promotion + serviceFee + discount + deliveryFee + deliveryDiscount + tip; 
 	}
 
-	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
-
+	const calculatedTotal = Object.values(finalDetails).reduce((total, userDetail) => userDetail.total + total, 0);
+	console.log("finalDetails", finalDetails);
+	console.log("totals", calculatedTotal, total);
 	if (Math.abs(total - calculatedTotal) > 0.5) {
 		console.error("invalid input");
 		displayErrorMessage();
@@ -317,10 +354,10 @@ function splitBill(assignedNames = null) {
 	const splitResults = document.getElementById("splitResults");
 	splitResults.innerHTML = "";
 	
-	const results = currentUser === "TBD" ? listItemsForAssignment() : createFormattedResults();
+	const results = currentUser === "TBD" ? listItemsForAssignment(finalDetails) : createFormattedResults(finalDetails);
 	splitResults.appendChild(results);
 
 	document.getElementById("splitResultsContainer").style.visibility = "visible";
 
-	console.log("details", details);
+	console.log("finalDetails", finalDetails);
 }
