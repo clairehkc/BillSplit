@@ -233,12 +233,11 @@ function displayErrorMessage() {
 
 function splitBill(manualInputDetails = null) {
 	reset();
-	const details = {};
+	const details = manualInputDetails || {};
 	const input = document.getElementById("billInput").value.trim();
 	let tax = promotion = serviceFee = discount = deliveryFee = deliveryDiscount = tip = 0;
 	const lines = input.split('\n');
 	let currentUser;
-	let finalDetails;
 
 	for (let i = 0; i < lines.length; i++) {
 		if (!manualInputDetails) {
@@ -292,13 +291,10 @@ function splitBill(manualInputDetails = null) {
 			}
 		}
 
-		finalDetails = manualInputDetails || details;
 		const cleanedLine = lines[i].trim().toUpperCase().replace(/(\s+)/g, "");
 		if (cleanedLine.startsWith("SUBTOTAL")) {
 			subtotal = priceToFloat(getEOLPrice(lines[i]));
-			const calculatedSubtotal = Object.values(finalDetails).reduce((total, userDetail) => userDetail.total + total, 0);
-			console.log("finalDetails", finalDetails);
-			console.log("subtotal", subtotal, calculatedSubtotal);
+			const calculatedSubtotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
 			if (subtotal != calculatedSubtotal) {
 				console.error("invalid input");
 				displayErrorMessage();
@@ -308,32 +304,32 @@ function splitBill(manualInputDetails = null) {
 
 		if (cleanedLine.startsWith("TAX")) {
 			tax = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, tax, true);
+			distributeFees(details, tax, true);
 		} else if (cleanedLine.startsWith("PROMOTION")) {
 			promotion = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, promotion);
+			distributeFees(details, promotion);
 		} else if (cleanedLine.startsWith("SERVICEFEE")) {
 			serviceFee = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, serviceFee, true)
+			distributeFees(details, serviceFee, true)
 		} else if (cleanedLine.startsWith("DISCOUNT")) {
 			discount = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, discount);
+			distributeFees(details, discount);
 		} else if (cleanedLine.startsWith("DELIVERYFEE")) {
 			deliveryFee = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, deliveryFee);
+			distributeFees(details, deliveryFee);
 		} else if (cleanedLine.startsWith("DELIVERYDISCOUNT")) {
 			deliveryDiscount = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, deliveryDiscount);
+			distributeFees(details, deliveryDiscount);
 		} else if (cleanedLine.startsWith("DELIVERYPERSONTIP") || cleanedLine.startsWith("TIP")) {
 			tip = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(finalDetails, tip, true)
+			distributeFees(details, tip, true)
 		} else if (cleanedLine.startsWith("TOTAL")) {
 			total = priceToFloat(getEOLPrice(lines[i]));
 		}
 	};
 
 	// update totals post fees
-	Object.values(finalDetails).forEach(userDetail => {
+	Object.values(details).forEach(userDetail => {
 		userDetail.total += userDetail.fees;
 	});
 
@@ -342,9 +338,7 @@ function splitBill(manualInputDetails = null) {
 		total = subtotal + tax + promotion + serviceFee + discount + deliveryFee + deliveryDiscount + tip; 
 	}
 
-	const calculatedTotal = Object.values(finalDetails).reduce((total, userDetail) => userDetail.total + total, 0);
-	console.log("finalDetails", finalDetails);
-	console.log("totals", calculatedTotal, total);
+	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
 	if (Math.abs(total - calculatedTotal) > 0.5) {
 		console.error("invalid input");
 		displayErrorMessage();
@@ -354,10 +348,8 @@ function splitBill(manualInputDetails = null) {
 	const splitResults = document.getElementById("splitResults");
 	splitResults.innerHTML = "";
 	
-	const results = currentUser === "TBD" ? listItemsForAssignment(finalDetails) : createFormattedResults(finalDetails);
+	const results = currentUser === "TBD" ? listItemsForAssignment(details) : createFormattedResults(details);
 	splitResults.appendChild(results);
 
 	document.getElementById("splitResultsContainer").style.visibility = "visible";
-
-	console.log("finalDetails", finalDetails);
 }
