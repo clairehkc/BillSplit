@@ -17,7 +17,6 @@ textarea {
 }
 
 button {
-  background-color: #00cc99;
   border: none;
   color: #FFF;
   padding: 1em 2em;
@@ -27,6 +26,14 @@ button {
   font-size: 1em;
   min-width: 150px;
   outline: none;
+}
+
+.primary {
+	background-color: #00cc48;
+}
+
+.secondary {
+	background-color: #c7a919;
 }
 
 @media only screen and (max-width:480px) { 
@@ -97,7 +104,7 @@ button {
 }
 
 .userTotalContainer {
-	color: #00cc99;
+	color: #00cc48;
 }
 
 .usernameContainer {
