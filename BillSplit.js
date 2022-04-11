@@ -1,4 +1,5 @@
 let subtotal = total = 0;
+const isInt = /^[1-9]\d*$\b/g;
 
 function loadGroupSample() {
 	const input = document.getElementById("billInput").value = `
@@ -224,13 +225,14 @@ function splitBill(manualInputDetails = null) {
 	reset();
 	const details = manualInputDetails || {};
 	const input = document.getElementById("billInput").value.trim();
-	let tax = promotion = serviceFee = discount = offer = deliveryFee = deliveryDiscount = tip = 0;
+	let tax = promotion = serviceFee = discount = offer = deliveryFee = caDriver = deliveryDiscount = tip = 0;
 	const lines = input.split('\n');
 	let currentUser;
+	let nextUser;
+	let previousUser;
 
 	for (let i = 0; i < lines.length; i++) {
 		if (!manualInputDetails) {
-			const isInt = /^[1-9]\d*$\b/g;
 			const itemQuantityLineSplit = lines[i].split('\t');
 			const matchedInt = itemQuantityLineSplit.length > 0 && itemQuantityLineSplit[0].match(isInt);
 
@@ -246,20 +248,29 @@ function splitBill(manualInputDetails = null) {
 				const itemQuantity = parseInt(matchedInt[0]);
 
 				if (itemQuantityLineIndex > 0) {
-					const potentialUser = lines[itemQuantityLineIndex - 1];
-					if (!(potentialUser.startsWith("$") || /^\s/.test(potentialUser))) {
-						// found new user
-						const user = potentialUser.trim();
-						currentUser = user;
-						details[currentUser] = {items: [], total: 0, fees: 0};
+					if (nextUser) {
+						// nextUser found on previous line
+						currentUser = nextUser;
+						nextUser = undefined;
+					} else {
+						const potentialUser = lines[itemQuantityLineIndex - 1];
+						if (!((potentialUser.includes("$") && potentialUser.includes(".")) || /^\s/.test(potentialUser))) {
+							// found new user
+							const user = potentialUser.trim();
+							currentUser = user;
+						}
 					}
 				}
 
 				if (!currentUser) {
 					// no user, ask to assign users
 					currentUser = "TBD";
+				}
+
+				if (currentUser !== previousUser) {
 					details[currentUser] = {items: {}, total: 0, fees: 0};
 				}
+				previousUser = currentUser;
 
 				// item quantity and name may be on the same line or on 2 consecutive lines
 				// item name and price be on the same line or on 2 consecutive lines
@@ -269,7 +280,15 @@ function splitBill(manualInputDetails = null) {
 				if (!(itemPrice.startsWith("$"))) {
 					const itemNameSplit = itemName.split("$");
 					if (itemNameSplit.length > 1) {
+						// lack of spacing between last item price and next user name
+						itemName = itemNameSplit[0];
 						itemPrice = itemNameSplit[1];
+						if (itemPrice.includes(".") && isNaN(parseInt(itemPrice[itemPrice.length - 1]))) {
+							// split after . and decimal places in item price
+							const nextUserNameStartIndex = itemPrice.indexOf(".") + 3;
+							nextUser = itemPrice.slice(nextUserNameStartIndex);
+							itemPrice = itemPrice.slice(0, nextUserNameStartIndex);
+						}
 					} else {
 						console.error("invalid input");
 						displayErrorMessage();
@@ -326,7 +345,10 @@ function splitBill(manualInputDetails = null) {
 			distributeFees(details, promotion);
 		} else if (cleanedLine.startsWith("SERVICEFEE")) {
 			serviceFee = priceToFloat(getEOLPrice(lines[i]));
-			distributeFees(details, serviceFee, true)
+			distributeFees(details, serviceFee, true);
+		} else if (cleanedLine.startsWith("CADRIVER")) {
+			caDriver = priceToFloat(getEOLPrice(lines[i]));
+			distributeFees(details, caDriver);
 		} else if (cleanedLine.startsWith("DISCOUNT")) {
 			discount = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(details, discount);
@@ -354,7 +376,7 @@ function splitBill(manualInputDetails = null) {
 
 	if (total == 0) {
 		// input did not list total, sum subtotal, fees, discounts
-		total = subtotal + tax + promotion + serviceFee + discount + offer + deliveryFee + deliveryDiscount + tip; 
+		total = subtotal + tax + promotion + serviceFee + caDriver + discount + offer + deliveryFee + deliveryDiscount + tip; 
 	}
 
 	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
