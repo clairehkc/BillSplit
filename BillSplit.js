@@ -320,7 +320,7 @@ function splitBill(manualInputDetails = null) {
 				details[currentUser].items[itemName] = {};
 				details[currentUser].items[itemName].price = itemPrice;
 				details[currentUser].items[itemName].quantity = itemQuantity;
-				details[currentUser].total = details[currentUser].total + itemPrice * itemQuantity;
+				details[currentUser].total = details[currentUser].total + itemPrice;
 				continue;
 			}
 		}
