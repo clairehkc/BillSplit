@@ -2,84 +2,70 @@ let subtotal = total = 0;
 
 function loadGroupSample() {
 	const input = document.getElementById("billInput").value = `
-Claire (You)
-1
-Popcorn Chicken
-$7.95
-1
-Boba Milk Tea
-$4.75
- 	Choice of Ice
- 	25% (Little Ice) ($0.00)
- 	Choice of Preparation
- 	Black Tea ($0.00)
- 	Choice of Sweetness
- 	25% (Little Sweet) ($0.00)
-Jill
-1
-Taro Milk Tea
-$5.25
- 	Choice of Ice
- 	25% (Little Ice) ($0.00)
- 	Choice of Toppings
- 	Boba ($0.50)
- 	Choice of Sweetness
- 	25% (Little Sweet) ($0.00)
-1
-Popcorn Chicken
-$7.95
-Frederick
-1
-Mango Passion Fruit Tea
-$5.75
- 	Choice of Sweetness
- 	50% (Half Sweet) ($0.00)
- 	Choice of Ice
- 	25% (Little Ice) ($0.00)
- 	Choice of Toppings
- 	Lychee Jelly ($0.50)
-Vince Vince
-1
-Popcorn Chicken
-$7.95
-.
+david (You)
+1	Super Burrito
+$11.52
+ 	Choice of Meat
+ 	Pastor (Marinated Pork) ($0.00)
+ 	Choice of Beans
+ 	Black Beans ($0.00)
+ 	Tortilla Option
+ 	Flour (Recommended) ($0.00)
+Claire
+1	Super Quesadilla Suiza
+$13.70
+ 	Choice of Meat
+ 	Asada (Steak) ($2.00)
+ 	Tortilla Option
+ 	Flour (Recommended) ($0.00)
+Vince
+1	Super Burrito
+$11.52
+ 	Choice of Meat
+ 	Pastor (Marinated Pork) ($0.00)
+ 	Choice of Beans
+ 	Pinto Beans ($0.00)
+ 	Tortilla Option
+ 	Tomato ($0.00)
  
-Subtotal	$39.60
-Tax	$2.33
-Promotion	-$5.94
-Service Fee 	$5.94
-Discount		-$1.98
-Delivery Fee 	$3.99
-Delivery Discount		-$3.99
-Delivery person tip	$10.37
+Subtotal	$36.74
+Tax	$3.12
+Service Fee 	$5.51
+Delivery Fee 	$1.99
+Delivery person tip	$7.10
 `
 }
 
 function loadRegularSample() {
 	const input = document.getElementById("billInput").value = `
-1
-Bruschetta
-$7.00
-1
-Garlic Bread
-$5.00
-1
-Fettuccini Alfredo
-$14.00
-1
-Nonni’s Italian Pot Roast
-$20.00
-1
-Fried Calamari
-$15.00
+1	Super Burrito
+$11.52
+ 	Choice of Meat
+ 	Pastor (Marinated Pork) ($0.00)
+ 	Choice of Beans
+ 	Black Beans ($0.00)
+ 	Tortilla Option
+ 	Flour (Recommended) ($0.00)
+1	Super Quesadilla Suiza
+$13.70
+ 	Choice of Meat
+ 	Asada (Steak) ($2.00)
+ 	Tortilla Option
+ 	Flour (Recommended) ($0.00)
+1	Super Burrito
+$11.52
+ 	Choice of Meat
+ 	Pastor (Marinated Pork) ($0.00)
+ 	Choice of Beans
+ 	Pinto Beans ($0.00)
+ 	Tortilla Option
+ 	Tomato ($0.00)
  
-Subtotal	$61.00
-Tax	$5.34
-Service Fee 	$9.15
-Discount		-$3.05
-Delivery Fee 	$5.99
-Delivery Discount		-$5.99
-Tip	$16.29
+Subtotal	$36.74
+Tax	$3.12
+Service Fee 	$5.51
+Delivery Fee 	$1.99
+Delivery person tip	$7.10
 `
 }
 
@@ -245,10 +231,11 @@ function splitBill(manualInputDetails = null) {
 	for (let i = 0; i < lines.length; i++) {
 		if (!manualInputDetails) {
 			const isInt = /^[1-9]\d*$\b/g;
-			const matchedInt = lines[i].match(isInt);
-			
+			const itemLineList = lines[i].split('\t');
+			const matchedInt = itemLineList.length > 0 && itemLineList[0].match(isInt);
+
 			// found new order item
-			if (matchedInt && matchedInt.length === 1) {			
+			if (matchedInt && matchedInt.length > 0) {			
 				if (i == lines.length - 1) {
 					console.error("invalid input");
 					displayErrorMessage();
@@ -259,7 +246,7 @@ function splitBill(manualInputDetails = null) {
 				const itemQuantity = parseInt(matchedInt[0]);
 
 				if (itemLineIndex > 0) {
-					const potentialUser = lines[itemLineIndex-1];
+					const potentialUser = lines[itemLineIndex - 1];
 					if (!(potentialUser.startsWith("$") || /^\s/.test(potentialUser))) {
 						// found new user
 						const user = potentialUser.trim();
@@ -274,8 +261,8 @@ function splitBill(manualInputDetails = null) {
 					details[currentUser] = {items: {}, total: 0, fees: 0};
 				}
 
-				let itemName = lines[itemLineIndex+1];
-				let itemPrice = lines[itemLineIndex+2];
+				let itemName =  itemLineList.length > 1 && itemLineList[1];
+				let itemPrice = lines[itemLineIndex + 1];
 				if (!(itemPrice.startsWith("$"))) {
 					console.error("invalid input");
 					displayErrorMessage();
@@ -315,7 +302,8 @@ function splitBill(manualInputDetails = null) {
 		if (cleanedLine.startsWith("SUBTOTAL")) {
 			subtotal = priceToFloat(getEOLPrice(lines[i]));
 			const calculatedSubtotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
-			if (subtotal != calculatedSubtotal) {
+
+			if (Math.abs(subtotal - calculatedSubtotal) > 1) {
 				console.error("invalid input");
 				displayErrorMessage();
 				return;
