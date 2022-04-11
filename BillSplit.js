@@ -350,7 +350,7 @@ function splitBill(manualInputDetails = null) {
 	}
 
 	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
-	if (Math.abs(total - calculatedTotal) > 0.5) {
+	if (Math.abs(total - calculatedTotal) > 1) {
 		console.error("invalid input");
 		displayErrorMessage();
 		return;
