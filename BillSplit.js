@@ -231,8 +231,8 @@ function splitBill(manualInputDetails = null) {
 	for (let i = 0; i < lines.length; i++) {
 		if (!manualInputDetails) {
 			const isInt = /^[1-9]\d*$\b/g;
-			const itemLineList = lines[i].split('\t');
-			const matchedInt = itemLineList.length > 0 && itemLineList[0].match(isInt);
+			const itemQuantityLineSplit = lines[i].split('\t');
+			const matchedInt = itemQuantityLineSplit.length > 0 && itemQuantityLineSplit[0].match(isInt);
 
 			// found new order item
 			if (matchedInt && matchedInt.length > 0) {			
@@ -242,11 +242,11 @@ function splitBill(manualInputDetails = null) {
 					return;
 				}
 
-				const itemLineIndex = i;
+				const itemQuantityLineIndex = i;
 				const itemQuantity = parseInt(matchedInt[0]);
 
-				if (itemLineIndex > 0) {
-					const potentialUser = lines[itemLineIndex - 1];
+				if (itemQuantityLineIndex > 0) {
+					const potentialUser = lines[itemQuantityLineIndex - 1];
 					if (!(potentialUser.startsWith("$") || /^\s/.test(potentialUser))) {
 						// found new user
 						const user = potentialUser.trim();
@@ -261,12 +261,20 @@ function splitBill(manualInputDetails = null) {
 					details[currentUser] = {items: {}, total: 0, fees: 0};
 				}
 
-				let itemName =  itemLineList.length > 1 && itemLineList[1];
-				let itemPrice = lines[itemLineIndex + 1];
+				// item quantity and name may be on the same line or on 2 consecutive lines
+				// item name and price be on the same line or on 2 consecutive lines
+				let itemName =  itemQuantityLineSplit.length > 1 ? itemQuantityLineSplit[1] : lines[itemQuantityLineIndex + 1];
+				let itemPrice = itemQuantityLineSplit.length > 1 ? lines[itemQuantityLineIndex + 1] : lines[itemQuantityLineIndex + 2];
+
 				if (!(itemPrice.startsWith("$"))) {
-					console.error("invalid input");
-					displayErrorMessage();
-					return;
+					const itemNameSplit = itemName.split("$");
+					if (itemNameSplit.length > 1) {
+						itemPrice = itemNameSplit[1];
+					} else {
+						console.error("invalid input");
+						displayErrorMessage();
+						return;
+					}
 				}
 
 				itemPrice = priceToFloat(itemPrice);
@@ -345,11 +353,12 @@ function splitBill(manualInputDetails = null) {
 	});
 
 	if (total == 0) {
-		// input was missing total
-		total = subtotal + tax + promotion + serviceFee + discount + deliveryFee + deliveryDiscount + tip; 
+		// input did not list total, sum subtotal, fees, discounts
+		total = subtotal + tax + promotion + serviceFee + discount + offer + deliveryFee + deliveryDiscount + tip; 
 	}
 
 	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
+
 	if (Math.abs(total - calculatedTotal) > 1) {
 		console.error("invalid input");
 		displayErrorMessage();
