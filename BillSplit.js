@@ -225,7 +225,7 @@ function splitBill(manualInputDetails = null) {
 	reset();
 	const details = manualInputDetails || {};
 	const input = document.getElementById("billInput").value.trim();
-	let tax = promotion = serviceFee = discount = offer = deliveryFee = caDriver = deliveryDiscount = tip = 0;
+	let tax = promotion = serviceFee = discount = offer = regulatory = deliveryFee = caDriver = deliveryDiscount = tip = 0;
 	const lines = input.split('\n');
 	let currentUser;
 	let nextUser;
@@ -355,6 +355,9 @@ function splitBill(manualInputDetails = null) {
 		} else if (cleanedLine.includes("OFFER")) {
 			offer = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(details, offer);
+		} else if (cleanedLine.startsWith("REGULATORY")) {
+			regulatory = priceToFloat(getEOLPrice(lines[i]));
+			distributeFees(details, regulatory);
 		} else if (cleanedLine.startsWith("DELIVERYFEE")) {
 			deliveryFee = priceToFloat(getEOLPrice(lines[i]));
 			distributeFees(details, deliveryFee);
@@ -376,7 +379,7 @@ function splitBill(manualInputDetails = null) {
 
 	if (total == 0) {
 		// input did not list total, sum subtotal, fees, discounts
-		total = subtotal + tax + promotion + serviceFee + caDriver + discount + offer + deliveryFee + deliveryDiscount + tip; 
+		total = subtotal + tax + promotion + serviceFee + caDriver + discount + offer + regulatory + deliveryFee + deliveryDiscount + tip; 
 	}
 
 	const calculatedTotal = Object.values(details).reduce((total, userDetail) => userDetail.total + total, 0);
