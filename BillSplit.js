@@ -382,7 +382,7 @@ function splitBill(manualInputDetails = null) {
 	});
 
 	if (total == 0) {
-		// input did not list total, sum subtotal, fees, discounts
+		// if input did not list total, sum the subtotal, fees, discounts
 		total = subtotal + tax + promotion + serviceFee + caDriver + discount + offer + regulatory + deliveryFee + deliveryDiscount + tip; 
 	}
 
